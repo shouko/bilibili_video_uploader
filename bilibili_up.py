@@ -53,11 +53,11 @@ class BiliAPI(object):
         """
         try:
             webbrowser.open_new_tab(
-                'https://gitee.com/nbodyfun/bilibili-API-collect/blob/master/video/video_zone.md')
+                'https://gitee.com/nbody1996/bilibili-API-collect/blob/master/video/video_zone.md')
         except:
             pass
         finally:
-            print('前往网页查看对应分区tID:\nhttps://gitee.com/nbodyfun/bilibili-API-collect/blob/master/video/video_zone.md')
+            print('前往网页查看对应分区tID:\nhttps://gitee.com/nbody1996/bilibili-API-collect/blob/master/video/video_zone.md')
 
     def publish_video(self, file, *, atitle=None, adesc='', acopyright=2, asource='来源于网络', specified_type=None, specified_tags=None):
         """
