@@ -18,6 +18,7 @@ from time import sleep
 from requests_html import HTMLSession
 from requests.utils import cookiejar_from_dict
 
+from cdn_profiles import cdn_profiles
 
 class BiliAPI(object):
     """
@@ -27,7 +28,7 @@ class BiliAPI(object):
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:71.0) Gecko/20100101 Firefox/71.0',
     }
 
-    def __init__(self, sessdata, bili_jct):
+    def __init__(self, sessdata, bili_jct, cdn):
         """
         登录cookies必要的两个参数，都可以从浏览器cookies中获取
         一定不要泄漏下面两个参数给别人，否则会有被盗号风险！！！
@@ -45,6 +46,7 @@ class BiliAPI(object):
         self.session = HTMLSession()
         self.session.cookies = cookiejar_from_dict(self.auth_cookies)
         self.session.headers = self.ua
+        self.cdn = cdn_profiles.get(cdn, 'ws')
 
     @classmethod
     def typelist(cls):
@@ -265,7 +267,7 @@ class BiliAPI(object):
             'ssl':	0,
             'version':	'2.8.9',
             'build': '2080900',
-            'upcdn': 'bda2',
+            'upcdn': self.cdn.name,
             'probe_version':	'20200810'  # TODO:跟日期相关，可能会改动
         }
         res_json = self.session.get(
@@ -285,7 +287,7 @@ class BiliAPI(object):
         upos_uri: preupload返回值
         auth: preupload返回值
         """
-        url = f'https://upos-sz-upcdnbda2.bilivideo.com/{upos_uri}?uploads&output=json'
+        url = f'https://{self.cdn.host}/{upos_uri}?uploads&output=json'
         res_json = self.session.post(url, headers={'X-Upos-Auth': auth}).json()
         # print(dumps(res_json, ensure_ascii=False, indent=2), end='\n'+'-'*50+'\n')
         assert res_json['OK'] == 1
@@ -304,7 +306,7 @@ class BiliAPI(object):
         chunk_size: 一个批次上传多大字节的视频，preupload返回值
         chunks: 计算得出的该分多少批次上传
         """
-        url = f'https://upos-sz-upcdnbda2.bilivideo.com/{upos_uri}'
+        url = f'https://{self.cdn.host}/{upos_uri}'
         params = {
             'partNumber': None,  # 1开始
             'uploadId':	upload_id,
@@ -339,7 +341,7 @@ class BiliAPI(object):
         biz_id: preupload返回值
         chunks:批次
         """
-        url = f'https://upos-sz-upcdnbda2.bilivideo.com/{upos_uri}'
+        url = f'https://{self.cdn.host}/{upos_uri}'
         params = {
             'output':	'json',
             'name':	filename,
@@ -374,6 +376,7 @@ def script_main():
                         help='身份验证cookie(上传必要), 浏览器cookies中获取')
     parser.add_argument('-bj', '--bili_jct',
                         help='CSRF身份验证cookie(上传必要), 浏览器cookies中获取')
+    parser.add_argument('-cdn', '--cdn', default='auto', help='上傳CDN名稱, 預設使用Wangsu')
 
     args = parser.parse_args()
 
@@ -389,8 +392,17 @@ def script_main():
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
     BiliAPI(
         args.sessdata,
-        args.bili_jct
-    ).publish_video(args.video_path, atitle=args.title, adesc=args.desc, acopyright=args.copyright, asource=args.source, specified_type=args.typeid, specified_tags=args.tags)
+        args.bili_jct,
+        args.cdn
+    ).publish_video(
+        args.video_path,
+        atitle=args.title,
+        adesc=args.desc,
+        acopyright=args.copyright,
+        asource=args.source,
+        specified_type=args.typeid,
+        specified_tags=args.tags
+    )
 
 
 if __name__ == '__main__':
